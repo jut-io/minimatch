@@ -1,46 +1,47 @@
 ;(function (require, exports, module, platform) {
 
-if (module) module.exports = minimatch
-else exports.minimatch = minimatch
-
-if (!require) {
-  require = function (id) {
-    switch (id) {
-      case "sigmund": return function sigmund (obj) {
-        return JSON.stringify(obj)
-      }
-      case "path": return { basename: function (f) {
-        f = f.split(/[\/\\]/)
-        var e = f.pop()
-        if (!e) e = f.pop()
-        return e
-      }}
-      case "lru-cache": return function LRUCache () {
-        // not quite an LRU, but still space-limited.
-        var cache = {}
-        var cnt = 0
-        this.set = function (k, v) {
-          cnt ++
-          if (cnt >= 100) cache = {}
-          cache[k] = v
-        }
-        this.get = function (k) { return cache[k] }
-      }
-    }
-  }
+// Set up minimatch appropriately for the environment. Start with AMD.
+if (typeof define === 'function' && define.amd) {
+    define('minimatch', [], function() {
+        return minimatch;
+    });
+} else if (typeof module !== 'undefined') {
+    module.exports = minimatch;
+} else if (typeof exports !== 'undefined') {
+    exports.minimatch = minimatch;
 }
+
+var LRU = function LRUCache () {
+    // not quite an LRU, but still space-limited.
+    var cache = {}
+    var cnt = 0
+    this.set = function (k, v) {
+        cnt ++
+        if (cnt >= 100) cache = {}
+        cache[k] = v
+    }
+    this.get = function (k) { return cache[k] }
+};
+
+var path = { basename: function (f) {
+    f = f.split(/[\/\\]/)
+    var e = f.pop()
+    if (!e) e = f.pop()
+    return e
+}};
+
+var sigmund = function sigmund (obj) {
+    return JSON.stringify(obj)
+};
 
 minimatch.Minimatch = Minimatch
 
-var LRU = require("lru-cache")
-  , cache = minimatch.cache = new LRU({max: 100})
+var cache = minimatch.cache = new LRU({max: 100})
   , GLOBSTAR = minimatch.GLOBSTAR = Minimatch.GLOBSTAR = {}
-  , sigmund = require("sigmund")
 
-var path = require("path")
   // any single thing other than /
   // don't need to escape / when using new RegExp()
-  , qmark = "[^/]"
+var qmark = "[^/]"
 
   // * => any number of characters
   , star = qmark + "*?"
